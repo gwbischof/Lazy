@@ -21,9 +21,9 @@ buffactive = {}
 defaults = {}
 defaults.spell = ""
 defaults.spell_active = false
-defaults.weaponskill = ""
-defaults.weaponskill_active = false
-defaults.autotarget = false
+defaults.weaponskill = "Evisceration"
+defaults.weaponskill_active = true
+defaults.autotarget = true
 defaults.target = ""
 
 settings = config.load(defaults)
@@ -138,7 +138,7 @@ end
 function Engine()
 	Buffs = windower.ffxi.get_player()["buffs"]
     table.reassign(buffactive,convert_buff_list(Buffs))
-	
+
 	if isBusy < 1 then
 		Combat()
 	else
@@ -221,7 +221,7 @@ function convert_buff_list(bufflist)
             else
                 buffarr[buff] = 1
             end
-            
+
             if buffarr[v] then
                 buffarr[v] = buffarr[v] +1
             else
