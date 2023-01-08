@@ -140,7 +140,7 @@ function Engine()
     table.reassign(buffactive,convert_buff_list(Buffs))
 
 	if isBusy < 1 then
-		Combat()
+		pcall(Combat)
 	else
 		isBusy = isBusy -1
 	end
