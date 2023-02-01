@@ -21,7 +21,7 @@ buffactive = {}
 defaults = {}
 defaults.spell = ""
 defaults.spell_active = false
-defaults.weaponskill = "Evisceration"
+defaults.weaponskill = "Sanguine Blade"
 defaults.weaponskill_active = true
 defaults.autotarget = true
 defaults.target = ""
@@ -109,7 +109,7 @@ function Find_Nearest_Target(target)
 	local dist_targ = -1
 	local marray = windower.ffxi.get_mob_array()
 	for key,mob in pairs(marray) do
-		if string.lower(mob["name"]) == string.lower(target) and mob["valid_target"] and mob["hpp"] == 100 then
+		if mob.is_npc and mob.spawn_type~=14 and (target=="" or string.lower(mob["name"]) == string.lower(target)) and mob["valid_target"] and mob["hpp"] == 100 then
 			if dist_targ == -1 then
 				id_targ = key
 				dist_targ = math.sqrt(mob["distance"])
@@ -150,11 +150,12 @@ function Engine()
 end
 
 function Combat()
+	local id_targ = -1
 	-- is Engaged / combat
 	if windower.ffxi.get_player().status == 1 then
 		TurnToTarget()
 		Check_Distance()
-		if windower.ffxi.get_player().vitals.tp >1000 and settings.weaponskill_active == true and windower.ffxi.get_mob_by_target('t').distance:sqrt() < 3.0 then
+		if windower.ffxi.get_player().vitals.tp >1000 and settings.weaponskill_active == true and windower.ffxi.get_mob_by_target('t').distance:sqrt() < 4.0 then
 			windower.send_command(settings.weaponskill)
 			isBusy = Action_Delay
 		elseif Can_Cast_Spell(settings.spell) and settings.spell_active == true then
@@ -162,11 +163,14 @@ function Combat()
 		end
 	elseif settings.autotarget == true then
 		if Find_Nearest_Target(settings.target) > 0 then
-			windower.ffxi.follow(Find_Nearest_Target(settings.target))
-			if math.sqrt(windower.ffxi.get_mob_by_index(Find_Nearest_Target(settings.target)).distance) < 3 then
-				windower.send_command("input /targetbnpc")
-				windower.send_command("input /attack on")
-			end
+            id_targ = Find_Nearest_Target(settings.target)
+            if id_targ ~= -1 then
+                windower.ffxi.follow(Find_Nearest_Target(settings.target))
+                if math.sqrt(windower.ffxi.get_mob_by_index(Find_Nearest_Target(settings.target)).distance) < 3 then
+                    windower.send_command("input /targetbnpc")
+                    windower.send_command("input /attack on")
+                end
+            end
 		end
 	end
 end

@@ -5,7 +5,7 @@
         <spell>Sinker Drill</spell>
         <spell_active>false</spell_active>
         <target />
-        <weaponskill>Evisceration</weaponskill>
+        <weaponskill>Sanguine Blade</weaponskill>
         <weaponskill_active>true</weaponskill_active>
     </global>
     <baelfire>
