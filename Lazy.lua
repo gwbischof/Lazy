@@ -15,6 +15,8 @@ isCasting = false
 isBusy = 0
 buffactive = {}
 Action_Delay = 2
+target_id = -1
+old_target_id = -1
 
 buffactive = {}
 
@@ -55,33 +57,33 @@ windower.register_event('addon command', function (...)
 	if args[1] == nil or args[1] == "help" then
 		print("Help Info")
 	elseif args[1] == "start" then
-		windower.add_to_chat(2,"....Starting Lazy Helper....")
+		log("....Starting Lazy Helper....")
 		Start_Engine = true
 		Engine()
 	elseif args[1] == "stop" then
-		windower.add_to_chat(2,"....Stopping Lazy Helper....")
+		log("....Stopping Lazy Helper....")
 		Start_Engine = false
 	elseif args[1] == "reload" then
-		windower.add_to_chat(2,"....Reloading Config....")
+		log("....Reloading Config....")
 		config.reload(settings)
 	elseif args[1] == "save" then
 		config.save(settings,windower.ffxi.get_player().name)
 	elseif args[1] == "test" then
 		test()
 	elseif args[1] == "show" then
-		windower.add_to_chat(11,"Autotarget: "..tostring(settings.autotarget))
-		windower.add_to_chat(11,"Spell: "..settings.spell)
-		windower.add_to_chat(11,"Use Spell "..tostring(settings.spell_active))
-		windower.add_to_chat(11,"Weaponskill: "..settings.weaponskill)
-		windower.add_to_chat(11,"Use Weaponskill: "..tostring(settings.weaponskill_active))
-		windower.add_to_chat(11,"Target:"..settings.target)
+		log("Autotarget: "..tostring(settings.autotarget))
+		log("Spell: "..settings.spell)
+		log("Use Spell "..tostring(settings.spell_active))
+		log("Weaponskill: "..settings.weaponskill)
+		log("Use Weaponskill: "..tostring(settings.weaponskill_active))
+		log("Target:"..settings.target)
 	elseif args[1] == "autotarget" then
 		if args[2] == "on" then
 			settings.autotarget = true
-			windower.add_to_chat(3,"Autotarget: True")
+			log(3,"Autotarget: True")
 		else
 			settings.autotarget = false
-			windower.add_to_chat(3,"Autotarget: False")
+			log(3,"Autotarget: False")
 		end
 	elseif args[1] == "target" then
 		settings.target = args[2]
@@ -122,17 +124,14 @@ function Find_Nearest_Target(target)
 	return(id_targ)
 end
 
-function Check_Distance()
+function reposition()
+    TurnToTarget()
 	local distance = windower.ffxi.get_mob_by_target('t').distance:sqrt()
 	if distance > 3 then
-		TurnToTarget()
 		windower.ffxi.run()
 	else
 		windower.ffxi.run(false)
 	end
-end
-
-function test()
 end
 
 function Engine()
@@ -149,30 +148,35 @@ function Engine()
 	end
 end
 
+function weaponskill()
+	if windower.ffxi.get_player().vitals.tp >1000 and settings.weaponskill_active == true and windower.ffxi.get_mob_by_target('t').distance:sqrt() < 4.0 then
+        windower.send_command(('input /ws "%s" <t>'):format(settings.weaponskill))
+        log(settings.weaponskill)
+        isBusy = Action_Delay
+    end
+end
+
 function Combat()
-	local id_targ = -1
-	-- is Engaged / combat
-	if windower.ffxi.get_player().status == 1 then
-		TurnToTarget()
-		Check_Distance()
-		if windower.ffxi.get_player().vitals.tp >1000 and settings.weaponskill_active == true and windower.ffxi.get_mob_by_target('t').distance:sqrt() < 4.0 then
-			windower.send_command(settings.weaponskill)
-			isBusy = Action_Delay
-		elseif Can_Cast_Spell(settings.spell) and settings.spell_active == true then
+	if windower.ffxi.get_player().in_combat then
+        reposition()
+        if settings.weaponskill_active then
+            weaponskill()
+        end
+		if Can_Cast_Spell(settings.spell) and settings.spell_active == true then
 			Cast_Spell(settings.spell)
 		end
 	elseif settings.autotarget == true then
-		if Find_Nearest_Target(settings.target) > 0 then
-            id_targ = Find_Nearest_Target(settings.target)
-            if id_targ ~= -1 then
-                windower.ffxi.follow(Find_Nearest_Target(settings.target))
-                if math.sqrt(windower.ffxi.get_mob_by_index(Find_Nearest_Target(settings.target)).distance) < 3 then
-                    windower.send_command("input /targetbnpc")
-                    windower.send_command("input /attack on")
-                end
-            end
+        target_id = Find_Nearest_Target(settings.target)
+		if  target_id > 0 and  target_id ~= old_target_id then
+                log(target_id)
+                windower.ffxi.follow(target_id)
+                old_target_id = target_id
 		end
-	end
+        if math.sqrt(windower.ffxi.get_mob_by_index(target_id).distance) < 3 then
+            windower.send_command("input /targetbnpc")
+            windower.send_command("input /attack on")
+        end
+    end
 end
 
 function Can_Cast_Spell(spell)
