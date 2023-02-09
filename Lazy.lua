@@ -188,7 +188,6 @@ end
 function autotarget()
 	-- This is true is weapon is drawn.
     in_combat = windower.ffxi.get_player().in_combat
-    print(in_combat)
     if in_combat then
         reposition()
     else
