@@ -10,7 +10,6 @@ _addon.author = 'Brax'
 _addon.version = '0.5'
 _addon.commands = {'lazy'}
 
-Start_Engine = true
 isCasting = false
 isBusy = 0
 buffactive = {}
@@ -21,11 +20,12 @@ old_target_id = -1
 buffactive = {}
 
 defaults = {}
-defaults.spell = ""
+defaults.spell = "Dia III"
 defaults.spell_active = false
 defaults.weaponskill = "Sanguine Blade"
 defaults.weaponskill_active = true
-defaults.autotarget = true
+defaults.autotarget = false
+defaults.pull = false
 defaults.target = ""
 
 settings = config.load(defaults)
@@ -56,20 +56,11 @@ windower.register_event('addon command', function (...)
 	local args	= T{...}:map(string.lower)
 	if args[1] == nil or args[1] == "help" then
 		print("Help Info")
-	elseif args[1] == "start" then
-		log("....Starting Lazy Helper....")
-		Start_Engine = true
-		Engine()
-	elseif args[1] == "stop" then
-		log("....Stopping Lazy Helper....")
-		Start_Engine = false
 	elseif args[1] == "reload" then
 		log("....Reloading Config....")
 		config.reload(settings)
 	elseif args[1] == "save" then
 		config.save(settings,windower.ffxi.get_player().name)
-	elseif args[1] == "test" then
-		test()
 	elseif args[1] == "show" then
 		log("Autotarget: "..tostring(settings.autotarget))
 		log("Spell: "..settings.spell)
@@ -77,16 +68,26 @@ windower.register_event('addon command', function (...)
 		log("Weaponskill: "..settings.weaponskill)
 		log("Use Weaponskill: "..tostring(settings.weaponskill_active))
 		log("Target:"..settings.target)
+	elseif args[1] == "spell" then
+	    settings.spell_active = not settings.spell_active
+        log(settings.spell_active)
+    elseif args[1] == "set_spell" then
+		settings.spell = args[2]
 	elseif args[1] == "autotarget" then
-		if args[2] == "on" then
-			settings.autotarget = true
-			log(3,"Autotarget: True")
-		else
-			settings.autotarget = false
-			log(3,"Autotarget: False")
-		end
-	elseif args[1] == "target" then
+	    settings.autotarget = not settings.autotarget
+        log(settings.autotarget)
+	elseif args[1] == "pull" then
+	    settings.pull = not settings.pull
+        log(settings.pull)
+    elseif args[1] == "set_target" then
 		settings.target = args[2]
+    elseif args[1] == "clear_target" then
+		settings.target = ""
+	elseif args[1] == "ws" then
+        settings.weaponskill_active = not settings.weaponskill_active
+        log("ws ".. tostring(settings.weaponskill_active))
+    elseif args[1] == "set_ws" then
+		settings.weaponskill = args[2]
 	end
 end)
 
@@ -139,33 +140,57 @@ function Engine()
     table.reassign(buffactive,convert_buff_list(Buffs))
 
 	if isBusy < 1 then
-		pcall(Combat)
+        if settings.auto_target then
+            pcall(autotarget)
+        end
+        if settings.weaponskill_active then
+            pcall(weaponskill)
+        end
+        if settings.spell_active then
+            pcall(spell)
+        end
+        if settings.pull then
+            pcall(pull)
+        end
 	else
 		isBusy = isBusy -1
 	end
-	if Start_Engine then
-		coroutine.schedule(Engine,1)
-	end
+    coroutine.schedule(Engine,1)
 end
 
+function pull()
+    if windower.ffxi.get_player().in_combat then
+        TurnToTarget()
+    else
+        windower.send_command("input /targetbnpc")
+        if windower.ffxi.get_mob_by_target('t').distance:sqrt() < 30 then
+            windower.send_command(('input /ma "%s" <t>'):format(settings.spell))
+            isBusy = Action_Delay
+            windower.send_command("input /attack on")
+        end
+    end
+end
+
+
 function weaponskill()
-	if windower.ffxi.get_player().vitals.tp >1000 and settings.weaponskill_active == true and windower.ffxi.get_mob_by_target('t').distance:sqrt() < 4.0 then
+	if windower.ffxi.get_player().vitals.tp >1000 and windower.ffxi.get_mob_by_target('t').distance:sqrt() < 4.0 then
         windower.send_command(('input /ws "%s" <t>'):format(settings.weaponskill))
-        log(settings.weaponskill)
         isBusy = Action_Delay
     end
 end
 
-function Combat()
-	if windower.ffxi.get_player().in_combat then
+function spell()
+    if Can_Cast_Spell(settings.spell) then
+        Cast_Spell(settings.spell)
+    end
+end
+
+function autotarget()
+	-- This is true is weapon is drawn.
+    in_combat = windower.ffxi.get_player().in_combat
+    if in_combat then
         reposition()
-        if settings.weaponskill_active then
-            weaponskill()
-        end
-		if Can_Cast_Spell(settings.spell) and settings.spell_active == true then
-			Cast_Spell(settings.spell)
-		end
-	elseif settings.autotarget == true then
+    else
         target_id = Find_Nearest_Target(settings.target)
 		if  target_id > 0 and  target_id ~= old_target_id then
                 log(target_id)
@@ -239,3 +264,4 @@ function convert_buff_list(bufflist)
     end
     return buffarr
 end
+Engine()

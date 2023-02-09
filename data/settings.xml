@@ -2,14 +2,10 @@
 <settings>
     <global>
         <autotarget>true</autotarget>
-        <spell>Sinker Drill</spell>
+        <spell>Dia III</spell>
         <spell_active>false</spell_active>
         <target />
         <weaponskill>Sanguine Blade</weaponskill>
         <weaponskill_active>true</weaponskill_active>
     </global>
-    <baelfire>
-        <autotarget>true</autotarget>
-        <target>Olyphant</target>
-    </baelfire>
 </settings>
