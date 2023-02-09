@@ -140,7 +140,7 @@ function Engine()
     table.reassign(buffactive,convert_buff_list(Buffs))
 
 	if isBusy < 1 then
-        if settings.auto_target then
+        if settings.autotarget then
             pcall(autotarget)
         end
         if settings.weaponskill_active then
@@ -188,6 +188,7 @@ end
 function autotarget()
 	-- This is true is weapon is drawn.
     in_combat = windower.ffxi.get_player().in_combat
+    print(in_combat)
     if in_combat then
         reposition()
     else
