@@ -26,6 +26,7 @@ defaults.weaponskill = "Sanguine Blade"
 defaults.weaponskill_active = true
 defaults.autotarget = false
 defaults.pull = false
+defaults.ra = false
 defaults.target = ""
 
 settings = config.load(defaults)
@@ -79,6 +80,9 @@ windower.register_event('addon command', function (...)
 	elseif args[1] == "pull" then
 	    settings.pull = not settings.pull
         log(settings.pull)
+	elseif args[1] == "ra" then
+	    settings.ra = not settings.ra
+        log(settings.ra)
     elseif args[1] == "set_target" then
 		settings.target = args[2]
     elseif args[1] == "clear_target" then
@@ -152,6 +156,9 @@ function Engine()
         if settings.pull then
             pcall(pull)
         end
+        if settings.ra then
+            pcall(ra)
+        end
 	else
 		isBusy = isBusy -1
 	end
@@ -165,6 +172,19 @@ function pull()
         windower.send_command("input /targetbnpc")
         if windower.ffxi.get_mob_by_target('t').distance:sqrt() < 30 then
             windower.send_command(('input /ma "%s" <t>'):format(settings.spell))
+            isBusy = Action_Delay
+            windower.send_command("input /attack on")
+        end
+    end
+end
+
+function ra()
+    if windower.ffxi.get_player().in_combat then
+        TurnToTarget()
+    else
+        windower.send_command("input /targetbnpc")
+        if windower.ffxi.get_mob_by_target('t').distance:sqrt() < 30 then
+            windower.send_command('input /ra <t>')
             isBusy = Action_Delay
             windower.send_command("input /attack on")
         end
